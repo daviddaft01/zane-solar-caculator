@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zane Solar Circuit Head Loss & Pump Selector</title>
+<meta name="description" content="Dealer-ready calculator for solar circuit head loss and Waterco pump selection.">
+<style>
+  :root{
+    --navy:#0b2f52;
+    --navy-light:#134a7d;
+    --zane-blue:#1b6fc9;
+    --sun:#f2a93b;
+    --sun-deep:#d98a1a;
+    --paper:#ffffff;
+    --mist:#f4f7fa;
+    --line:#dbe4ec;
+    --ink:#152534;
+    --ink-soft:#5b6b7a;
+    --good:#1f8a52;
+    --warn:#c0392b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:"Segoe UI", Arial, sans-serif; color:var(--ink);
+    background:var(--mist); line-height:1.5;
+  }
+  .skip-link{
+    position:absolute; left:12px; top:-48px; background:#fff; color:var(--navy);
+    padding:10px 14px; border-radius:8px; z-index:1000; font-weight:700; text-decoration:none;
+    box-shadow:0 2px 8px rgba(0,0,0,0.18);
+  }
+  .skip-link:focus{top:12px;}
+  header{
+    background:linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 60%);
+    color:#fff; padding:28px 32px 24px;
+  }
+  .header-row{display:flex; align-items:center; gap:22px;}
+  .logo-badge{
+    background:#fff; border-radius:10px; padding:10px 14px; flex-shrink:0;
+    box-shadow:0 2px 6px rgba(0,0,0,0.18); display:flex; align-items:center;
+  }
+  .logo-badge img{display:block; height:52px; width:auto;}
+  .header-text{min-width:0;}
+  header .eyebrow{
+    text-transform:uppercase; letter-spacing:.14em; font-size:12px; color:var(--sun);
+    font-weight:700; margin-bottom:6px;
+  }
+  header h1{margin:0 0 6px; font-size:26px; font-weight:700;}
+  header p{margin:0; color:#cfe0f0; font-size:14px; max-width:760px; line-height:1.5;}
+  @media (max-width:640px){
+    .header-row{flex-direction:column; align-items:flex-start; gap:14px;}
+    .logo-badge img{height:44px;}
+  }
+
+  .wrap{max-width:1180px; margin:0 auto; padding:24px 24px 60px;}
+  .grid{display:grid; grid-template-columns: 1fr 1fr; gap:22px;}
+  @media (max-width:920px){ .grid{grid-template-columns:1fr;} }
+
+  .card{
+    background:var(--paper); border:1px solid var(--line); border-radius:10px;
+    padding:20px 22px; box-shadow:0 1px 2px rgba(11,47,82,0.04);
+  }
+  .card h2{
+    margin:0 0 4px; font-size:15px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--navy); font-weight:700;
+  }
+  .card .sub{color:var(--ink-soft); font-size:13px; margin:0 0 16px; line-height:1.5;}
+
+  .seg{
+    display:flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; margin-bottom:14px;
+  }
+  .seg button{
+    flex:1; padding:10px 8px; border:none; background:#fff; color:var(--ink);
+    font-size:13px; font-weight:600; cursor:pointer; border-right:1px solid var(--line);
+  }
+  .seg button:last-child{border-right:none;}
+  .seg button.active{background:var(--zane-blue); color:#fff;}
+  .seg button:hover:not(.active){background:#eef4fa;}
+  .seg button:focus-visible,
+  .field-row input:focus-visible,
+  .field-row select:focus-visible,
+  .action-btn:focus-visible{outline:3px solid var(--sun); outline-offset:2px;}
+
+  .field-row{display:grid; grid-template-columns: 1fr 100px; gap:10px; align-items:center; margin-bottom:10px;}
+  .field-row label{font-size:13px; color:var(--ink); line-height:1.35;}
+  .field-row .hint{display:block; font-size:11.5px; color:var(--ink-soft); margin-top:1px;}
+  .field-row input, .field-row select{
+    width:100%; padding:10px 10px; border:1px solid var(--line); border-radius:6px;
+    font-size:16px; text-align:right; background:#fbfdff; min-height:44px;
+  }
+  .field-row select{text-align:left;}
+
+  fieldset{border:1px dashed var(--line); border-radius:8px; padding:12px 14px 6px; margin:14px 0 6px;}
+  legend{font-size:12px; font-weight:700; color:var(--navy-light); padding:0 6px;}
+
+  .result-hero{
+    display:flex; align-items:baseline; gap:14px; background:var(--navy); color:#fff;
+    border-radius:10px; padding:18px 20px; margin-bottom:16px;
+  }
+  .result-hero .num{font-size:38px; font-weight:800; color:var(--sun);}
+  .result-hero .lbl{font-size:13px; color:#cfe0f0; line-height:1.4;}
+
+  table.breakdown{width:100%; border-collapse:collapse; font-size:13px; margin-bottom:6px;}
+  table.breakdown td{padding:6px 4px; border-bottom:1px solid var(--line);}
+  table.breakdown td.val{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  table.breakdown tr.total td{font-weight:700; border-top:2px solid var(--navy); border-bottom:none; padding-top:9px;}
+
+  .pump-pick{
+    border-radius:8px; padding:12px 14px; margin-top:14px; border:1px solid var(--line);
+  }
+  .pump-pick.ok{background:#eefaf1; border-color:#bfe6cc;}
+  .pump-pick.tight{background:#fff7e8; border-color:#f0d79a;}
+  .pump-pick.none{background:#fdeceb; border-color:#f2bdb6;}
+  .pump-pick .name{font-weight:700; font-size:15px;}
+  .pump-pick .status{font-size:12.5px; margin-top:2px;}
+  .pump-pick.ok .status{color:var(--good);}
+  .pump-pick.none .status{color:var(--warn);}
+
+  svg text{font-family:"Segoe UI", Arial, sans-serif;}
+  .curve-label{font-size:11px; fill:var(--navy-light); font-weight:700;}
+  .axis-label{font-size:11px; fill:var(--ink-soft);}
+  .grid-line{stroke:#e6edf3; stroke-width:1;}
+  .op-point{fill:var(--sun-deep); stroke:#fff; stroke-width:1.5;}
+
+  .note{font-size:11.5px; color:var(--ink-soft); line-height:1.5; margin-top:10px;}
+  .footer-note{
+    max-width:1180px; margin:0 auto; padding:0 24px 40px; font-size:11.5px; color:var(--ink-soft); line-height:1.6;
+  }
+  .footer-note strong{color:var(--ink);}
+
+  .actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px;}
+  .action-btn{
+    appearance:none; border:none; border-radius:8px; min-height:44px; padding:11px 14px;
+    background:var(--navy); color:#fff; font-size:14px; font-weight:700; cursor:pointer;
+  }
+  .action-btn.secondary{background:#eef4fa; color:var(--navy); border:1px solid var(--line);}
+  .quick-access{
+    margin-top:16px; padding:14px; border:1px solid var(--line); border-radius:8px; background:#fbfdff;
+  }
+  .quick-access h3{margin:0 0 8px; font-size:14px; color:var(--navy);}
+  .quick-access ol{margin:0; padding-left:18px; font-size:13px; color:var(--ink-soft);}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+  @media (max-width:640px){
+    .wrap{padding:16px 16px 42px;}
+    header{padding:22px 18px 20px;}
+    .card{padding:16px;}
+    .field-row{grid-template-columns:1fr;}
+    .result-hero{flex-direction:column; align-items:flex-start; gap:6px;}
+    .result-hero .num{font-size:34px;}
+    .seg{flex-direction:column;}
+    .seg button{border-right:none; border-bottom:1px solid var(--line); min-height:44px;}
+    .seg button:last-child{border-bottom:none;}
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to calculator</a>
+
+<header>
+  <div class="header-row">
+    <div class="logo-badge"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALUAAABtCAYAAADnPiDrAAA6j0lEQVR4nO2dd5wbxdnHv7OrLp10/dxxw5hmigkdQocABkwNJPQAITihhfbihBJCCD0BAiGhBYfQDNimF4Mdiik2xjZg3Pv1O+nUy+68f6zKSifp7mwDZ+KfP2fdrWZnn5n9zTPPPPPMjJBSshVb0WdEmyVaCDwjBQiIbJC0vgGWKgh9BfZ6cI8GLQzRdeAcAs6h4B4psLgB8a2JZvnWct6KHzYiS2HDVEj5Jckm0MPo0aUont1A60LGl0FKReoCJCjV40GLgnNbSe0RYPUCEqr2SpN880Fs1dRb0SP0GLTPkdhqIDAfOt+HVAcy8iXCPgqcI0FxGKS11MLAo8E/F1Jd4N4WOj8BPQyKG1LtEFmMjK9CVP4YRlwO8VZIxcC7U1rzbxq2knorSiMVgeY3JWvuRvOvRK2wgWUQCDsodmR4LqLiQFAskGiBxGpQa2HgWRBrBnstWGshuh5q9gFrFSTaQItD67uQMDQ8jqFQNd64LhSoOwocdRtN7q3mx1YUx6pHJOsfQQ+uBYuOOvISiK+ByBLwHQJWD0KLAAKsg0HxgHNHcA0F1Q2pIMgUrL8DhA8UBbQwsulhRPWJUDEGEl5k430QG4rQE1B7KIgkND4Pnu0ldQdtFLG3auqtyEd4tWTlA+iN/wYEyoCTYNvJ0PwarP83eMdBxY5g9YFrFFSOK0+8ZEASazV+j66EWCvIJDQ+ComlULE/sv0DhKMamWpDVJ0Boy6B1rfAOQgGTOgzsbeSeityCC2XbHgafe0DCKsC0oKo/znocUCFYb+EiuGbx20RXCJpnAGOesOm9owBNLTPJ6HW7gie3ZGtzyN2fQF8O/XpmVtJvRUQWiaJt0DrG9D2PFJrRygW9KQGukCpOgB2fVygOjf/s6PNEnT4+nLQgJEXwbpn0de/Ao4UisUGdefA4NPBu12vyL2V1FsBjdMkjVPRO99BWDSEAnpKoFQeAaN/BxWjvz2ncgb+eZLV/wHdD1X7QLwRWh9Bj8cgpaAMOQNG/hac9T3KsnWg+L+O1pmSNX9HRj9HcQ1FD21ADDkHZdAZ4Nvh2ydzBpW7Cyp3h7VPSf2bq1DqTwXLEBTPSGRgDjiGQaIZQl9K6g4uK9cWR+p1jV0y0BFBWFUABAJJbn5KItPXcp8gEAKQZNMa1+kxjUjnnMvP+EtgTKQZPZ2RSqgKyWiC9W0hfrz3NsLpsH43lbKxWP+s1OZfiVrpQ1QeDvFmlNqdYMRl4Kj97ghtxtAzhGJvkCy9ET28AsU1DjHiGuSquxFaAJJdgJTUHVJSvi3K/Lj9b/+Vd786jwACLIpxUQjIlCFNyqIo/M7MYPO1YvVhvjeTJu+56QRJjQHtIY4/Zjy3/fYw4XD0Y50RaZT6B3ugNPwcGg6DZdfAtndCfWmyfOf46gapr30UpXocxBahx5MouzwJ7u3ANWTLJnU4KZl03VQ588NvaPM40W0Wg1BZ2UWaeDKfdKSvZb6nIE3mYmH1FKYRdP/dTGpFgUSSIe1BDj5qPA//se9uqO8cH+0tsYyE7W+EpX+CEZdC5a79T+4Fv5baummo1dsYM5aKB6oOhzFXCJTiA9d+T+o3Zq+Q19//Jq3rO2ip9YKqgK53T1hKy0JxTVvuHmF6t1KabZtcfpm/FQViCeoCYX563J7cfs3h/Y8YZgQWSLoWgWID1Q5NU2HIBVC7X/+Ve/n9kvAi0PzIjv8iUwpK9b4w+iqo2qOb3P2a1H+8b5a8a9qn2JIpAjUVBol02V2zFsJsZG9KGihoENn/0n+LLKHPPWVfbrqs/ADme0dgkWTtEzDwOKjaW7DqYUnNAeDrYQKlP+DLqyT+t0DvAMWBHo6g1O4PO/4d7L48+ful0Tdrzmp5zf1vEZy7Eq/PSdBtx9cZNo3gZJ42zTRMIUTu98x36c/c4JF80yR9T1JViHpdmDLtbj9LU46KArEkdf4wF/7sQCZfckD/J0aiDTxjoeYAQeN0ydAzhREttwWg5iDQYsj2qaAEERYBrh2MaEH7HnlJ+yWpm1tDHDCqgfoDd8BiUU2EwqQti/QwkhKaVRZPkx7g2e1W3G4rdz//CUs6gmBPey0yvZi5NxMYhA7HqQvFuPDnP2byr/bv/4QOLJKsexi2/yskOiXObdhiCA0w4BiBrUqKVDMoLvT2NxHhRbC2EVSvxDsm+w76tfnxXeLOhz6Qd7/0MZ1WK6hFOJppCIqASILqSJyrzj2Ey87ds/8TGgx/dLwFhvx0y5C3GEIrJMICzkGCL86Ssn0WqDpi23thyMkCDDev8v1K2T9w1m+nygeeeJdOm9VwFQrSP+b3LwwNHUlQG4px3S8O23IInQpBZDXUHvZ9S7JpSHVBYK4R6jpsEsI9wOCxFoLwuqx2/p8n9U8ve1bO+uBrmuorDc9K1uSgu9kRilIViXPtxUcw6azuo+5+i+h6iW/X729CZXPBt6MgMB9WPCSpGi9wjUPGVFCcxqKEaLOEfmpTf1eY+Kun5LzPV9DSUJmbQAHy3H/pTzUYxZ3S+MOlR3P+SVuAt8AM52CBxfN9S7HpEFYYdBKsfxqSYYnwGcqm/Q2wDQHPSHA2/G9q6rgGx/ziX/Lz+SsNQkP+YNQMIbCEonhSGndctgUSGvhBEDoD3zjBgONAT4FvZxQHEPkCVCdseBH4HzQ/AuGkPPK8R+WXX6+jucFX2lctAEVg64rgSOncfcWxnHV83+J6t+JbghaFrvmwzfkCoaBHWo01ktX7Av9jpG5qj8gjL3icFcuaaK73YUQk0Z3YAhAKdn8YTQj+fu3xnDHhO4xY24rycG8HkRUQa5MMuBSkgObHIdYEqcj/DqmXrw3Ioy5+gnVrWmk1mxxAN1YLgcsfJqWqPP/7EznxiDFbCd2f4BokqD8GllwPQkUoEiy+9B4jG+T/BKkXLu2QR//mSVoa/bQ3VBqxI2bPhjnKT1Fwd4aJWFWm/v5EjjpgxFZC90cEv0B2Tgf7YISzChlfDq5tQLH+8L0fnyxokidOfg49EKazzlc8GCoDRcHbESLqsPHqjSdx8F5DSxL6oWe/kJVOlZ9O6G5nz1/UJFc3dnH84ZtHw9/6t/flW+8tIFbhNqb7pcQWiTF61CAeKRER+IvJM+TSpetJelym6IJc483kkwktECI/Gykl9lCU7XcYyoM3HtP/Gnb7HNAEDDlFEF4s5aqHEcl26Frwwyb1+/M2yKMnP4srEjcCoopG95GNtvN1BEm5Hbxxy6nss+vAki/y+Te+kbffNY2rfnNM0e+dTis/vftVHggn5HknbPrgcvn6ThqXNNFYm5vWrveH6bTZSt7z+do2gsubaa40dj/KLYwwR8XkfjcvlsigoTNMrOJbWJe4OeAZgfA3GIuC7fWgCwivBI/jh0vqV95bIU++bRruRNIgtKYXDzVNT31XtgdRvE5m3HoaP9q5oSQRn3ttsbz49ul4FIURgyuLptlmsE8gkL+7awY7jqyVe40bsEnE9rltdPncJDyO7LUOXTLebS95T5XLziqfi0SGlIXlLgzHzRDalM6f0tjO7aBfonIfCHwBnZ9JtKTRID1jQXH+MAeKz7++WJ5xyws4kxrhSrdBaCjyYgUogqq2IO4qN6/ecUZZQj/x4kJ5ye3T0BRBs89NMpkqmi4WT0mfz40tqXHC5OdYvjawGQJsCmY3swvSikPXJTrkL6Ywl8x8c2EEYjptoUnSr+AcZMSERxshvAQUCcEvIfDxD4/UT7y4UF7y5+noQNTnLFiuVZBYEVS3dlFVW8Er9/6cXcaWnkb+5/ML5DX3vkLIZiXmdaHoepEMM5BIXaep2oPSGWLilf+hK1K8AWwU0hGGPVEuF7YmctGFusQbiFARiOAt/PHnfq/wR6juCLG+K7r55N6csLgE1mrwjAZ0wwMSeA+SLT8s8+Ohp+bJGx9+i7DVguZ1pk0OUwIzwRWF6pYA1Q0+Xrj7Z2w7zFeSI49OXSAn3/8aAbsVPA5Iaj1Iko6I0iUddT7U9R1MuGSKnPXYOZtP9ZlX5JQVxRQTntDAYWXP4fXpW01mB6QHjLnkllCUUWMHbzaRNyv0pLGhpOoEx2BkQoUBZ4EW++GQ+p5HPpZ3Pj6TgNMGHjOhRba7zr4/IahpDVA/sIppf/0ZQwdUlKTHff/6TN76z7cJOKxQ4czZ5lB6+RgmT4Ou01rvQ/lmPRMnPS1fvH/jQj+LParHsOGMrZxeWOEKR9lpQCUz/npaP7Yreol4u0R1gq0OrFUIqw6Ve0DnJz8M8+PWv70v7370HTrcDoPQGS9H5p1nbEYhQCjUtgSoH1TNqw+eVZbQ9zz6sbzj4bfwu+zpfAsXG5ThRt5XkuZ6H/PnLuO866ZtvH1dEArbowEiTT9ASlFI6hv/+H6F6ErDprZXCzrfAVU3QmxTgS2f1Df+5T35t6dm0+Z1gcsOstDkMG9jAPXNfoZtU8cbfz+bATWukqy4659z5F2PzaTV4wCXLX/CxrysrCgKgqPS6ZvqfMyctYhr73xn45hlKktPYziR6Z1M6bZ89WyCYxsIrzBcepYBCAVjuVoquGWT+re3vi4ff/oD2n1ucGaIR4loO6ht8TN89EDeePQ8UVfpKPmOb/3b+/Lex9+l3Z0htOy+aKCspha5j6ypAlgUmqsrePqFOdzytw/6TuysW1n2aHrkOTTSMvxAdLSB2Fpoftr43bkNwlphaGqULZfUl970inx+xmc011SA3WIQuowqqm/yM2r0QN549Fzhsasl09103yz59ynv0eZ1Gpo/210X8XGXQ2YMZr5Hl2Cz0Fzp5qGnZvHI1AV941meJyczWVJehGILlX8YkDDg56DYwf82qJVGiK175JY5UPzl9dPlazMX0FLrM5Zf6eaV35AlYJpY9S0BdthhCC/9/WxRhs/c8Jf35GPPfkhrVYWx+NY8A1ls8qIcCgiYzUNKsFtpdzu49v7Xaahxy2MPGtV3xknK2tQiWw8Un3Ta0lF7YK7wqXWg1BnhqJ4dtjxN/bMrnpNvzFxIS12lQehiK75NhG5oCbDLuOG89s/yhL7uznfk4898QGulK0doIXLmTKYKMz7fshwpiKXI200q/bfbQUpVOOXWaXzw+YbyuaVdbbmVOPQkQHbPv8K0P7iF1p2fSz3sB9tgqDkQfLttWaQ+adLT8oOPvqGp3peOBC/m5yJLxgFNfsbvNpLpD/2srCa8/JbX5X9emENLtQfsadtcUSCpYQnHjGfleVK6kyUf5viKQvlyrr6Yz4U3meLYyc/xzcrOkmwzgo5M9/ZmyCcLPoVASImq/MDMkOB89HBaW9kawDNcbDGkPuHip+Tcuctobqg0LW0QucGYWYtJSX2zn933GMXUB04vT+g/vCZffOUzmqs9YLMY3hNFgUgcpOSCQ3amxm4DzTyFnNbgZWYUs+lKQRiTM13VHpzBKKdc/TT+YKJnNdoXTpoHqVIihSClSxJJnXg8lf+TKPxbIxpLktL6sWZP+CWNU7HU7wy+vQ03n9gCQk8D4aQ8+df/5ptv1tM6oIo8d5ksVEeADg2tAQ7YdyxP3nVyWQr8+saX5YzX59Nc6wVbetMcYWxU44vFefC6E5h41Fjx4An3S3Qd1AL7pTeTL5CzaRUF4knjd0e6R9AknbVe1MZOjp00hfefOK94hulJym4xGiWQi1HKjS8Sbgdf+EPseM6j3Szy3C5XuXGlpyvMYQfsyO1XH9Y/1Xt0Nbp/PsqIX4HqME4To5+vJvcHE/KoXz5B46pWWut85Qc7ac03oMXPAfvvwL/uOLHsi7jo+unyjZkLaK7zgkU1BpuKQAlF8caS/PHSo5l41FixaHGrJKV317qFLr4i4nRrfEmN4ZVuVkXjKMEoeoXDeK6u01bnRVnayPGT/iOn3Z/fu0gpyw4KiyFXVSbfuqqAprOuNVBcdvPYARjSHqSpPdSn536nUByGvIlOqD0YKoww335rfjS2ReSRFz7O+tVttNT7ir+EbKCOAE2nodnPQQfu2COhz7/2pTShK3P7XCsKjq4oNk3n9iuP5bz0qvFoLGnk3ydk1Gr+JWckzvjBtbzy22PQVQVLKGZobwAJLfU+FsxdztnXvJjXerN7BMqCDMsgruloeWECpMcKGK5Kpy33mfndbc+7FnI78LhKx2x/71h8vfHp3QVcI8BaAfRTUn+1olMedfETrF/bRlt9+rjfUoMuoUBCo6E1wDFH7MJjf55Y9m2ffdVUOXPWIprrfMb2YhJQBI6Ascj2sWuP50zTqnGLmiFdwfN7sABkwWweEqSAlR1BDtl3uHj26gm4EykIm4gNNNVXMnv2V1x+6xvZJ+h695Up9OilNnmFzBo4U5W6TP+kf9dk7lo6jdB1ZH+dVl98vUw1fYqy3Y3G3wl/9qt+R+q5i1rkMZdNoa05QHt9ZV4ld1/1LSCRoqG9i4lHj+eBm8tvdn765c/J2e8vTu/GlDYeVZWKzhAxi8rTkydyQsESLFVVcg82E6unaXLTR8FVACYcMlr8cdJPqInEIZbIEVsRNNVU8OLLn3HrQ8aso9WqmqbIM6KUN0hEsY0xFQE6OMIxHJE4jnAMeziK3fwZihrXQ1G8wRj+SKLMU74nRNZJbdmTWEafDdUHAxK8Y3OK6HsUrRvmfNEoT7j+OQhGCNR581er5J0QkNHQKRrauph47HjumfyTsoQ+9TfPyE8+XWp4TzLvW1HwdgRJOqzM+P2JHLbPNsXzME1Pb9RERvqewnZ5/snjRGtHWD70+Eyaq4ThH5c6WFWafW4e+Pds9tt1qBw9rAZR0EKkLK+pZZ7gaYTjjKjz8X/nHmiYNHmpuxddiyYZNbqub2X9LrD6QUPckZeBxSGwH5NXFf2G1O98tFqeePOLOKMJAjXeXOioeXLFPOUbS1AfiHDKCXtyx7VHlCX0iZf8R86dt5yW+so8T4SvI4ilwsmLfziZfXcd1DvDWZp7jt7a2jIXhFRwy7UX7iOisYR8/JkPaKnyQEYrO6x0SMlRd77M3tVeOrzubFZgPLu8pjYnNuBOpqh32fn5xC1wl6kMOv4rtWVTULc924jQi7dJ7PmLO/oFqV98a6k8+/bp2HWdQLXHRGRymjlDpLRbrN4f5uxT9+Pmyw4q+4ImXDRFLly4mpasO9DwclS1B7FXupl2x+mMG1NT/iWbu36zS62MxhbmAVr6HlliaHDTb34sQuGYnDrtU5rNppHLDpEEc0Kt6TiU/Gn7XmlqU8+SVATxVE8LHPoxwsul9snpKG4dxv5BkAyD6E7h753Uz722WF5418tYpCTkc+deXHb3ftOrU0T6OIpIj4TWgeMufFIuXLQ2vV+eyXsQjrPXmIG8+I+zetRY43aoN6ict/G7yJ/wKQVzejJtojgV77ruSNERiMl3Zy00iC0w6sJuSQ/sClbC97icq8CHL7L/bbGQn/4YxWZB7P6cccHqhiKF+l5J/dgLC+S1972OZlFJep2m6ecidqsiIJakpivKhacfwORJpY+jSOpw9C+ekEu+NhE6A90wPWoH1XD3I3Nka2c49112wsL4QwG6wnHj2ZbCwJESarcY0mUxsi5NrMduO1789PKEnPPxEmNbtMIgLVNeRn7lewqReWi2cFsqdJh3vpRJibLXdPCOE6SiYCm+fcP3Rur7nzSWSXXZrfmrVYC8aea0uUA0QW0wxuXnHsIV5+9V8g0ldDjy3EfliqWNph1NTQkUAU4bUz5eQtW78W7jvsLdAjRVgUp37nSBTO9RltMi95E/jVK2TgCevucUMeHipyTzV9I8wCS/kHkNzvi/NFHzxEsX0pgv2gLJ/cHBUvOvRN37abAPg67F0uztKMT3Quq7/zlH3vnEu3S6TatKCjxQWagKhGLUROJcft4hXHFeaUL7w0k58VdTWL6sKX+/vELmSh2cVjqd1nwToXCT9WwPXqAtM5M+JSENLdqN+IU+jOKY8eAZ4qBzHpPa0g20NVTlFj9Ajti99cCYyiVhy4vS++xnUg+uQN3vJagcbwwMyxAavgc/9c33zZL3PD6TTo95VUlapZlFNdQKBKNUR+Jce9ERZQnd6o/Kn1zwOMuXbaC13kd2UAjkMcscTpolNDniZp9QxDdtHsAWyluAUl/1VlHOeOgsUT+sjtqWgNGwzegFMbOPyTRq8yLcLQGpgOS/B0itbRbKAe8ZhE52UejpKIbvVFNfd8fbcspLH9Pmc4PDmltVUiz4RygoQWOz85svPYbzTy7thtrQGpbHTZpC8/p22hoqs3EcaDqucCxPW2fDOM32c6H2Sw/CpISkqpD0OAomP6TppmIQRYP48m3c8qhwqEy79wyOuORfpFq68Nd6uw+cyyAvlTQpji2B1Wufk3LplSB8qPu8DO5RAi3S69PEvjNSX3HLa/LFV+bRVlORjoij+8QKGJ+qgtoVxZ1MccdlR3PWCTuXJfSxk6bQur6dtnpfjtCRBEjJbtsOQlWUbLdbyGOg23vOiKIIQSSZ4rPWQNqdSE5L98AtUZhGlB/YFcOQBo946a4z5IGT/oWvM0SgyuTupPxyrmyPUNA1KH2U4TtF82uSFXeih75BGfBz2Pm2tPA6qK7y95rwnZD6kt/PkK+8vYDm2gqwWvIHhYX2oaJgC0Swajr3XDmh7GbnS1YH5MlX/pv25gAdWUIrEI5RFU1w7XmH8JtzNu0ErTXrAnK7X/3LmAyy5TwgouzMokmrZ1pQL0yWYhizTaWY9sdT5cFXP4XLHyJS5cn2cD1H7uX3hBZdYlH6XWQEhNdIlt2Dtv551No9UPb7xNiDOou+yfytk/r8a16UM2d/mY6IE0UITd4sn6MrgpSSh687oexm54tX+uWEK6YQaQ/SUefNaehwjOpInMkXH8nFZ+y+yX1tIBhPy2piaEbrljWQZd5H4eW+YK9xA8T0G06Sp05+FlsgQsLr6rFxJDUdKcxLdiDisvN5IMJZ1xp7j8i0RwToPnbIC0ughIlofKckk1S57dx2w4SyS+byBQyC/zNJ44vIjqkI2/aoe/4Hajf9oNVvldRnXPG8/PCjxcZkgiLyN4PJIFMEVcHtDxNXFJ76vxOYcMjokoVbtKxDnnTVU0TaQ3TU+nLLr8KGl+TaC4/YLIQGSCZNm0ua1j72CuaBKH1W0nk4bJ9txANXHCsvu2M6iXCMZA/hsJoukYXjBpuFZDTBm3MWd5OtJApXohdbmS4lrniKD5dskLdOOpJD9x/ec1GFAo7B4BqFqPsHDDzadI9G5qDPjcG3RuqT0vEWzRnXWjFkKlYRuDtDhK0WXpx8IkcdULpSPlvULE+5/jni/hCddd40oQ0NXRlLcu2FhzPpzPGbbzRUaJsWcaiUvzH3e19t6kKcfsz2IhJPyt/f/QoWXc+FxRZ7el4NiLSfW4IqCKT3rC57U19chkAAiDT5OfHG57nq2PFy8mUHl38HFjdUjBFUjCny5cYTGr4Fl15Sh6Mv+Jf8LEPoTNEKu6/MjyLwdoaI2ay8cvPJZQn90ReN8uhrniYaCNNZY4riC8XwxZPc8uufMOnMzXxoZ56v2pR12acUGXlmXS6bhvNPHCeuvuAw3MEYHZF46YR5Hs2Mzzzn3cmKmfG5Z2NsTDcKc1rTZ56fPndPoLqChNXCP579kIm/nCKXrd4cWxj3HZtVUwciSXn8xVNYuXRDOoAIcr7RAg8HGJFynUFSLgdv3nIK++5WPFJO1yX/eOZz+ed7X6EmkqCjtoLKti6EEDjiSeJWlRt/fXRZt9/GIpZMUdceRNV1YjajulRNxx2OE44WjzXWdJ2uQJjBnSFCTlu2vL6uKHOrN/1Mw0vP/pH4/Jsm+czitaQ0iaXIWeqLusIMaw8SSKZMvUoRW9kMmf2vu2fK3FNlBvdFpmN1IYhbVZbMXsxBi9Zw0an7ykln7UVVpfM78yVuNlI3d0bl8ZdMYcPq9OlX2UJnUhQ0WlXB19aF6nUx/Y+nsmeZ3faj0STL1rRz2P5jcddVIkyDTRmK8aN9RnPGhB2/lUobXF/ByT/Z3ZiFzCy81SUkU4wdWVv0HofdKs7fZ4yMhOJgs+a+iMU4cWD1ZpHr8VsniINfWCD9gYisrXZ3K/uv9xpD64h6hMNRlJzdz3kx9SSyCLGz92SS9jCAVATBziDzv97A3EVNHLb/iM1S7t5AbI5p01UbgvLEy6bQsqGT9jof2QoqnHbO/CIEVW1d2Ks8vHjbaey6fd0WMCPQP5Fx+vRnlOpNvi1ssk391fJOOeE3T9K8odNYfmW23woVQbqFV7UGqKj2MO2O07cSehPR3wkNfKeEhk3U1J8saJKnXv8siUCYzoxrDUq7vRSF6rYuquu9TL3rDMZsU7kFvJKt2NKw0aSe9ek6eeINz2PNHOemdQ9iz1tTKEENxzl0RD3THj5zK5m34lvDRg0U3/5wtZx48wu44kkC1UUInYF5dJzSqXTaOGXCeD5f2CRbOsL5gUV595E/aQDkDWSKZN8tH1FwS8m2a0pUKo9iz+z2nUmQtHcgL3jK/KjC+zPehOwDCkQU3ZOVlleaZCiUu/C7gjotNBcLZegmf+GMYy6DbDHKuDJ1TcduVTj0wI3Y9bUM+qypn399sTznrlew6zoR8/KrvFxNbMtUgsRYVKppEE0W3FBsYFmg6YvWeMFkgbmCS7mkzM8z35t9rinfovcXssicbTFXWS/8072ZtSt+Y06OvLoqlK3wWm995sXyN91fTs7CGPQi71DRJRVJjcN3Hc5fbzqeKq99s5C7T6SeMn2RvPTe10gpwog/MK8nzATF5+WOyf2T/l6XZepY5Cojc1+xqeluPDdlVMzdVExrl9KexbuJgnQl0phlyQtVLVop3fMo7HVKkbSQYNkkpnouy9+CZxZTQua66HU76db9lCiXSV5dUtfehW9wFbf+8nAmHLrtJhO716R+bOoCed1fXyVos+b2gCs1IOz10wtJTH4ll3n/3fNK/1foYy2VtlQD7FXaHhpRNo0sKE+Jxt/tmUXy6wnFytuLtlf8eol6LFzrVu6Z3eQrdd0whzz+CEjJJceO58YrD90kYveK1H95/FN522Mz8dstxnpCqXfXwGVDMQufav6ljIYvdW+hJip1bymZShK1F4Qrh57qoFuPU6InKpdnIenKPcOsObtZTSUaTl/eY/YZdG+0xTR9qfwz0+6xJPWBCLvvPIy7Jk9g5JDSZ1uWFaknUv/pwQ+M069cdnCnZ6dKTJF278J6qLjeavrCyipG2nIvu7AHKPqMIrIUW8RQTJ5imq2wkRSrn1JlLalxe0G4smXsQyMq1gBh03uPoumy/4GU1LZ1Yamp4MYzD+Tsk3fpM7HLkvrm+2fLR/7zPi1eV+70q7K5len+y5Em83sxrdLtGZRP05uGUqpb3hgttTEu0W7xFLJ4o+zWaMvI25cerPDvUveWaphmWXt6H6VQshcVIAS2rjCeeIrTDxvHnTcc0ydilyT1dbe/LadMM60nzLhmynVX5bQ1lLbDykpYpvDdtCfk1W6hidTT/RvTIIuSo4S27an+NgalGmiv7i1RB6XqtqceICNPb82OUs/NPC+p0dARZNsxg7j9t0ez204NvSJ3UVL/+oaX5ctvzKep1ps7MqKcnVrU7mPj7NNuBexFPr3t2nvzfTEZyj2v8Ho3bwRF6qaMaWKWsdiAudQ4pFxZzCj27szXe+ox+vLMvF64xLPLjkEECKhq7SLocfCnU/ZlUpkdBbK3mUktgdMufUYumP0Va+u86KpKWTVg1oTma5AjdjZd0ccXydD8nSz4LEhX2GUWvvRi5CgqQ5l+uJtdWUjawp6hxDNKeXPKoacydauHIuZKT3kXlaNYYyomFxR936VkgvzyFMsrz7RJp1MElcEY7kiccXtuy72/O5ZhA70lS5gldTiS5Jo73pLPz1xAoM5XPFKmTy9iM6AU14qmNXVb5a6Ve1a3yu1l+h7z7oMcPebVh+d+W+irDJtFZgG6jq+ti51GNHDzJYey7x5Di6uQDKkjsRQLv26Wwwd7Ua0qophilsV2tC+eJncwTs/pzenM95vvLfXsYtd7I2ep55crh7lXM8vYU5lL5VWsnD3JWqoOij23XHnN6EmOcrL29J6K1V9v6qfUs6WisHJZK75qN2NGVpcn9VZsxQ8F/XATiK3Yik3D974/9beF0696QS5f2UTM6UDVNCTwz2uPZY9xA79vi3SLxT+e/FQG2oPsf9D27L1r/61HSzyeoisYk0p6a66s/YJI2+Y6NquKz/fdLZzcHFjY5Ce6tp0mrwtPSkMA4T4eyhOLpQiFYlKYti0TQlDlcwqlxGqOaCxFOH0PgNR1FFWlumrLqj8zYrEUJ1zxrFwydzlSEfx5+lzumnSkPOvE/nnMhuXDuevlz2+bTtiqEjfvIyGN/xTAJwQjXHY5qqaC3bYdwPln7y28zv6t5OvdduZXONE9drqSOkiJtdvG6eXx0luL5XUPvk2by05KCCoTKexOGx/95XQ5sKGi6At9ZsaX8uZH3qG5wokuBHXRBIPqfMx59OzNUq7vA399/GO5/NNlNA6qBlWhsj3IRf9+n4lHjKXC0//OWbRE40m0rghJm8XY5ahgZk5H0Ikk1BFi5Ypm3vvoGx57c7684ZdHcFKZbcG+d0gMV5rM/EGf3UrRmIYWCJNKaaAqaPEkzZqOXuZswVA0gRaIoAMIQSoU40tn/3vxfUFTR8jY7cmigC7xO6wQS5IyDi7vdxywWC0qAYfNmDk0+6YTKeNTCLBYSDqsdKblT7aHuPDP0xhUe7rcZ/ch/a5QOQjTp+zbrBhgsyoEnXbjHHFFEBQCnLayrjO7VSXksoPduKdTk4wwb5PQz3D/E5/K6a/NI+XzIASogRDHHL4rl5pm7n5xynge/PAbBq5rJ+Kw4gvGOHLid7uXR19gKTnf6rAahE7p2MIxEhbVOOZX0/HXeGhoDvB/D8/i3Yd+9t1K3CdsmrtSSmnY0oXxK+XyLUhrxOf0y3cPwPJ17az7ch1N9cbezw0tXSwdOyQvzQ7b1op3/3iKfPiJ9+kIhNln91Fcc0npM3e+b1iEWZsJAckUWFReu/pYRgypJBhKMHfRBv707Ees7oqko/UkzVUemte0svDrFrnz9vX9toBZbASxhBD5hJS566XQ7QxxWXzCo7+g2uci6HMRrTAOBQomNKp93feC3nuXgWLvu0/5rsXbKOSP9qTMLrfaads6amtcAmCnsXUIVcir733VMFUAVAV7NM7i5a3svH190cxXruyQK9f5CYcToAjqql1sN6KKqhpPnxi2+JsWua4pSCSaQLWoDKh1s/22dcLlLm2rimyMQbZwfXlk+o7i9yhlSK0I0ef2s2FDQC5b1ZHdNrim0snY0bVU13TfeakYOjojcuGXzQSCUex2KzuOqWdILwPss7ujpuNjJLLo5rSbgqXL2+XyVR0kEykqPHZ22XkAVZWuXsn3yWdrZXNbGJAMH1rFzjuW3skrAxOp0zZ/+o00toaprcm12LEjagnYrcYBhZljtBHEk90Pm7z/kY/kjI+WMLs1CPEkVk1DCkHKojLQaeOAberkyUftzIQjSh9IE05I/vrge/K1uSv51B+GeBKbppNSBLpFZYTHLg8aNZDTJ47ngD27xwDIbkMYUXihFyiSXkBDfelG2VDtQjWtrpfIkk+d8dYS+eS0uby7rp1QPIk1ZXhpklYLA5xWDhs1QF5w5n4lt2Rr6ojI2+55hxmLVrMhksCu6SSFwOmyc9ou28ifn7AbNz3yXzr9IXSrFWskxvBtGnjqjomitS0sJ1z9PC2BEO2V7mx8Skelh3/OWcJb56yWSiTGQzdMZNhgL0dP+jeaoiAVBVs4wo5jh/LwH4yz4Jet7JCn3zQdJZVCt1qwhqPsusMw7rr2CHHZTa/IJ79YhZrUsEhJTBEMddk57cAd5B+uOKRkPf7h7nfkC3OWsjgUw5Ye3yUsKieMHSyvPv9A/vT4B6xtbCdls6Emktg9Tl68/USqK13C0q1RprvKsdvmHxjz4by1+OIpAk579lpKgNfjyP49f3GrvPyWaSxf0UzcbjVOabVaSNrTAyVd0hiO8/any3hz3gomzFwsH77thG4Fe/m95fJ3979B5/oOgk4buBxgt5LIqEBdZ2UgSmj2Vzz9yTJ+dfRu8pbCdW0C08Bw47wf3bS71QKazgWTZ0i7VUUvMCsUIVjVFqTLZacnXHXbm/Lfr85FkRDyukCCM5lCSEmXotAUS/LGB4t57vOV3H7REfLCU/J9wnO+2CDPv/EFIo1+mirdYLcRT++xHk6mmDrrSx5dsBqSGs5YgqSqUB+I0Ggx9FgypbNwXRtWTYfMrgBSgk0lEIqxtK2LqlCMUCSBpumsWdVCwqoSs1gY0BFE9+Y2uozEUixe305FPEmX3UplLEGrxcrRlz4jVyxcjfS5SbnspNJVuiEc55l/zyaqSXnnVfnvrd0fk6de9h9WLl5Pq8cBThsJd5pjms6sz1fw0k3tkEjhDkWJqQqV0QTtXhdayngflm7vWVFAwH+mL5QDaysIheJ8vHAdf/lwMXgcOWIkUySddnbergGA5as65RHXPI2jrcs4HUsRBicicbzxJFIRBF12cNnpcNkhqTFz5gJOulKTU+86KSvGe3PWyHNunopNk3QOrEpzS0I4ji+pkVAUom4HuB20uuwQS/L0M+8T0aS8++rDsvl0Z/jGQOSeryjGtsm6ZMb7XyPShC40UUJ2G1Q4cmerQzd7/nf3zZYvvTCHzjofOG3Y/GESLjt7bjsIiyJ4fX07ro4QrYOqsQbC3Hjfq4we7JWH7DtcALR3RuSRN7+Ety1I26BqkLohayxJRTSOFIJAhQtSOqgKUa8LpKRDl+yUJohEoqsKKbPLM1NWIYgrCilVQQiw2ayiw+uSqAqoCoFUiu3dOWVmsSik3HY6rRawqbRXOCAco6uxA2Gz4o0lIBqny+cGi4LmsbNWVXjgrfmcc9w4udN2ua3nJl79POu+Xmf4xDN1F4njixln+HQ67RBNgKIQ9hk9TLtFBY8DJe29s3SzG9MHvl/0j5kgJRZNxx1PgtsJTmv2iLgBHSHG7TWGEcMM2+0397yFu8lP0+CarG1e4Q9jqa9k/2G1xJMab65owtaVPt7BorB+QDX6B1/z96fmyYvO2F1EIgnOu+9N7EnNOMNFAkkNXzBCzZBadmzw0RlJ8P7KZohLYxGw08r6ukqeefkzjt1vtDxkP+PFG5wT3bwRfUV6HjHv3kC54ykEuX2zi+CrJW3yzlfmQpUHbBbUQJj9R9Tzwn2nC7sj5/o7/+oX5NR5K4h7XShRP9c9MpuP9x0OwE0PzKZmXQeNg6uydpbXH6ar2sNBOwxF0yWvrmzCGYwSzWjhbBRcWpupCgOrPLSFYmiazJUnpYPTRq3bjs1hxWm3Eo0l8ipOUHCIUqGpJ4F4ki6vi0sP2J6GKg+LV7fyr0+Wgt1qmK9OGzWtAV6btZSdtqsD4J5H5si1C1bRlCU0VPhDOOt8HL7HaFRF8MGKJlrXd9BV6aKwJ80MyC05bUR+l20xTtBK2QSBzIJb3fD11rQGaKp0M+PigwH4aN46+d5Xa9HrK7MHfXoCEU7YeztuufIw6usMG/Tjeevkr+58jSWtXaQ8dlAFEYeVB9/4govO2J3XZ62QiTWtdNRUGM/SJdZYnAuOHc/vf3OwsKYPEnrl7SXy/PvfJBCOGd4YmwVF0/nb859yyH7D82t3Uz0P5sUFAtBBicYRSJS8YHbQkWgW1ZApPfkjyA9ZnTJjAQ1dEZoHVIGmY9Ml48cN56tl7bK5PYyuS2qrXOzzo1E8tWA1aDrt1RX417Ty9dI2uf22teIfX6xC8TmzhHYHwvx4523485VHMiK9P+GXi1vlb25/lbmrW4inNbXhtTFkbajziAX/OIdbH/qvfHzaJ3TWVICUVAXCnHnMHkz+1YFC0zTp9TrF7Dmryh6CYBzqlK5vAE3HmUxx/8WHccbxuZPVEtdOk6999LVxylh6cNrSEcrm8/jsxYRNDdvdGWbfsYP55y0nUJseNMcTGr+8fpp8+bNlhCrzvTQZr5Thp86U1SS4Gk1gTftphRBYNB1byggMGjqkhn9feQw7jTW6jXfnrKIyGqfDYzeyiyQYOKiaQnt5r92HiNt/fYQ88XfPGRrBohJwOwh0htGBL5e3GHHc6cZV0RXhRzsM4w+/PSwvn2MOGyN+3xKSNz/8ljF4FdDmcfDu+g5TCQs+N8ZnXbikKZECh5X7LzwMr9tm2NRZeY1u+IP5a3jg3UUGsUkPFE3SL2/sJGZVDZNBQLTSzR1vzufe6Z+ik3VCoNksucNTEXgSSVat81Plc0hLZ4iU22E8O5HEUunmqXtPExZTlMOOY+vE3yYfJ3ed9AQkNbAqBfUBHrcVt8OGao4T1yVupzUz/S0AUqmMKSWyZSqoqPw/4wksdZV5hAbYZ9dhvPHR19m61RUFY1LSMF+X+EO5HQtSOmG3g7/fMjHrhQOw21Qeu+NEMfDkByWhWHr9bCbLrKYukCn9knYcWotNMWwqBYHXpjKq3sv47Qfx81N3yxO2KxLP625rInEO2G4wxbDfboNFosojCUWN3kBVIJmktTUku8JxkhbFEEBI7CmNPcYMKJrPsQeO4sqn3je6eqsCqkoklSISTeIyH8/cnd29RtZPnSGvZpwvc+4ppZftWyyKnPL654br02SSZxCJp9DVTBkBCfZIHEdKQ8h0MD0SmUgiI0YglSIENW0hWjoitLSFcWk6Xem8fZE4e40dgqVIEPF2I6tEXa1Ptjd2oFvsRWshnkyim3poKQSxzGxyGqqqmDSxSP/LobAztOow0tXd3ZpMaKRM8UXS1AsuWdmOiCaQaZexGk9QN6iWhprirr/dBtcy74sVBBzdZ2st5spFYGgjm4Xn/nACwwb3ztfpsKpp2YyMIlYL3zR2Fk27vjkkCceNXfkzJo2q4nHbhdNulUrGHSYhJQSrW4JF8/lqRQeOaJxYRmPpxk7/dntBoFWm4vS+hynkNFL6PsXo0jY0BeWgAcUDmprawiQzZxUKYb4bAJtFRZFps0gHpM5lx/2IGp8rT/PbbVasmUNUpUTGEuy72xDWNXUZJ3Ol0wVtFpa3BIrKn9KhPRhBt6jpYUGx3qrQ1VkweVQSuXtEeoFsprwSunmGwIj4LFxRlcnFW+FAqkrWpNJsVpr9IQKhhPR5bN3q+qvGDqOXzmQiTeaHyEiRk9AgVKr33fVu2w8kblGzTTZS4WTekvU8+MSn8uKzf5Qn0OS/vEVFNE4wfUKUI5bAUefD7bKyzaBK1IznX4Df62Lq58s5+a0l8tjDc8FToVCCPz36nqEvVOOlVMYSjBlWh5q3trJgvNBHZPVRwb1lJ1fM0+gZO9Z0w6BqN7Z4isyi0squCBMO3Z7xvVz+b7EoMlrhhHgK7BZ0t53W9e3cdM9MecPl+X7fS2+YIT3+MF0+V/alF3JNFht3FJWknMmR3xDS7bBHmGdmx+80QFDhkAQihivYpuL2R7j4d9N46u6T8+pw0u9nyEiL3xhsZyYkTDJbMk6CQmnC3XYmLY3jj9hOXPmvGmld00pnbQUgiDps/HbKbN79Yo3cbXQDsWSKt+evYvHqViKZI88EVAejnHzkrgAcdcAoJk2pwBaMkvA6waaSimiccvcrnDbza7n9sFo6QlFenreS9S1+4j5X2jSQ2GNJzjp0J1OFpQtkLtsmxoIY+fQyj7QClDKfNBMP3Z5n3lmQtnNVuuwWLrh1Ov+4+hg5flfjIKemlqC84k+v8c3aNqJOO5aUTlMszpt/OJlddxogJowaKD/58GuaB1WDLunyOLj3lXnMXdEi99lhKJqm8d7CtcxbtsGY/s7bikAWiGlquBkyFBbRNMA0cuiWoHtLL9FEzVahOR+Hw8JpowYya+YCmtzGXo0hn4vXF6xi3JmPyIO3G4yqKny0pNGoF6/p2LyCd5KvqU1dSF/xwAUHcc7vnsPeFSXudYLdiq4qvPv5cmbPXQpA2Goh5cu5wxoaO7GNGsBNvz5IAAweWCHu/ul+8va/vkqTRTVarMsGCY3XP1rM6x8ZBQg4bMaEQbpAgxs7GLPndpx/2q7dh4WbwGOjjae1kFLkZRdDhgASzN1xBofsO1wcud8Ocs6bn7NuUDV6hZMlrV3s/7upHDq8XjqsKrPXtaO0+I3uNRhj5LoORu09hh3HGjE2N1x4IHssXI3dHyZe6QarSkxx8OGXa/hkwSqEEEQsKgmnLS23LGl+ZE/uLVc2sweosECZPDJ5Z/f4KFE9pjxEgXfidxcdyDMLVuHrCBr7nktJtMLJ0pYArWvaAOiyW9Ed1nRG+Q/JlE/RdIkjpUFKMw5BTP/e1yCcI388Stx6+TEkVIX6xk6IJUERhCpdBKo8BKo8pNK7parBGAPXdzB01ABevf1UHI6cHXzxGbuLC845GG88SW2L37DxLQqBSrfxU+0xPAspDZc/xIAmP7vsMZrp956a1xqjSQ1HUjMMy1QKNL2onVcOKU3iSmnG/ckUlpQGSa1sPHUqpeNIptL1mcKT1OhK5YcSPPnHCWL3/cYysKkTRyCC5raDlHz85Rr++/kKgl2RtNtLMNgfonL3Ebx29ylY06PBHberEw//+kgcmqS6JQCaBAXCPqOu/ZVubJktkxXF6BWSOq6URrRAllRKx5aRN6VjS2okC9LousSSNMpOSseR0omnTKEAuuGtIJmCpIY7mSKS6h4+kdJ07KZ8bMkUSS1Xl6OGV4kXrj2OoN1CfWMHJNJ5OO34qzz4vS588STYLVS57MaYBPJ7GcwR1N3sxr5r7HMn7izev+tnHL7fWFAF3kCEyvYQ1e1BqtuDVHaEcQWjjKhyc+ZJezN7yi/EiCKBN//3y/3Ekzefwv67jgBd4guEqerI5BPC1xnCHo4xdlA1k845mKkPnCFKH5aTtrk2wl+dr0cyg6Ee7snr7YxPtUhdPnPvqeKiM3/MyJoKXF1RfMEI1nTDqYrE8fnD+BxWjv/J7rzz+PmismA53ZkTdhSP3XwyO48egDsYobo9RE1bkJr2IFUdIcaNbOCRCw/BaVENsqXlKZSkW0+dLURhInImVaEJ00uuGE4WmZ9/wWv5yQEjxHt3/oz99xgFSNxdEbzpHxJJDt9rDO/feCJ1divEkyZXo0RNc0B0+iPy66XtCMV4aVI3XEg7ja0XbtfGB7cvXdYuP5m/jrXNXXSFYyiqSp3PyeihVRzy41HCWcQVUwzzFzTK+V81sr4tSDiSwGJRqa9ys93wag4/uPQG3Qu+apGhUAwlvYeJlDrbb1uHz+vodWttaQ3JZSs7UC2qYYroOqpFZZcdGoTdVnxpWFNzUK5Y3YliMVYRyZSGw25ltxILfnUJr7+1WC5b66fFH0bXdLwuO9sM9HHAPsMZMqhnD9Rrb30jv1zaQkcwhsOust2wWk5Lrx98/5M1UlUEQlXQkxoej51xO+QGpavWBeSGdX4UmwUhBFoiyeBBlWwzNPdcfyAmv17aiqIoSAF6IoXX58rOU4QjSRZ+0yKlbgyMdU3D5bSza8Hgd0NTl1y1xp+tGz2RoqHBy6jhVSXL+PFna+TCb1qwW1XGjKxlr/QGNs7j7pOGO1fFEokzYkAVC/51nkHx/hzruxX/W3joqXlSjyeRVhWb1UK1TWHPfUYwtMB9ev+Tn8lbHnmHgM8NiqC6rYv99hzDs+kYov69enYr/qdwy/TPqFywmnUDK7FIiSuWpK3CyS0n7yMP338Uui6Z9fEqrnnpE3DaM/YM1qTG/jsNzeazVVNvRb/B67OWy3NveJ6kEISr3ICAWAJ3LEG4wnDfekIxQnar4RWTUNviRx1ay1ePnitcTsOk3bpD01b0Gxz141HitsuPIWlV0x60BNgthL0uI0RB0wl5nUa8RyxJw4YOkj43z143gQyhYaum3op+iPlft8p7H36Xl1Y04whEUDQdmZ4nUJBICZ1uB8eNbOD6y49k3LY1eTb3VlJvRb/F2rUB+fb7y1nV2Ik/GEcKqHBaGVxbwT7jh7HbuEFFvSb/D19wb8CUDo8eAAAAAElFTkSuQmCC" alt="Zane Pool Heating"></div>
+    <div class="header-text">
+      <div class="eyebrow">Zane Dealer Conference &mdash; Hydraulics Session</div>
+      <h1>Solar Circuit Head Loss &amp; Pump Selector</h1>
+      <p>Work out the Total Dynamic Head (TDH) for a solar or booster pump circuit, and see which Waterco pump from the Zane catalogue &mdash; Aquastream MK2 Solar or Hydrostorm &mdash; actually delivers it. Adjust any figure &mdash; the defaults are a realistic single-storey starting point.</p>
+    </div>
+  </div>
+</header>
+
+<main id="main-content" class="wrap">
+  <div class="grid">
+
+    <!-- LEFT: INPUTS -->
+    <section class="card" aria-labelledby="setup-heading">
+      <h2 id="setup-heading">1. Circuit setup</h2>
+      <p class="sub">Choose the installation type &mdash; this changes which components sit in the loop.</p>
+      <div class="seg" id="seg-circuit" role="tablist" aria-label="Circuit type">
+        <button type="button" data-val="dedicated" class="active" aria-pressed="true">Dedicated Solar</button>
+        <button type="button" data-val="booster" aria-pressed="false">Booster (Post-Filter)</button>
+      </div>
+      <p class="note" id="circuit-explain"></p>
+
+      <div class="seg" id="seg-storey" role="tablist" aria-label="Storey type">
+        <button type="button" data-val="single" class="active" aria-pressed="true">Single Storey</button>
+        <button type="button" data-val="double" aria-pressed="false">Double Storey</button>
+        <button type="button" data-val="custom" aria-pressed="false">Custom</button>
+      </div>
+
+      <fieldset>
+        <legend>Flow &amp; elevation</legend>
+        <div class="field-row">
+          <label for="flow">Desired flow rate<span class="hint">what you want circulating through the collector</span></label>
+          <div><input type="number" id="flow" value="150" step="5"><span style="font-size:11px;color:#5b6b7a;">L/min</span></div>
+        </div>
+        <div class="field-row">
+          <label for="elevation">Elevation to collector<span class="hint">roof height above pool water level</span></label>
+          <div><input type="number" id="elevation" value="4.5" step="0.1"><span style="font-size:11px;color:#5b6b7a;">m</span></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Pipework</legend>
+        <div class="field-row">
+          <label for="diameter">Pipe diameter</label>
+          <select id="diameter">
+            <option value="32">32mm</option>
+            <option value="40" selected>40mm</option>
+            <option value="50">50mm</option>
+          </select>
+        </div>
+        <div class="field-row">
+          <label for="length">Total pipe run<span class="hint">suction + up + across roof + down + return, combined</span></label>
+          <div><input type="number" id="length" value="18" step="0.5"><span style="font-size:11px;color:#5b6b7a;">m</span></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Fittings count</legend>
+        <div class="field-row"><label for="f-elbow90">90&deg; elbow (standard)</label><input type="number" id="f-elbow90" value="4" min="0"></div>
+        <div class="field-row"><label for="f-elbow90lr">90&deg; elbow (long radius)</label><input type="number" id="f-elbow90lr" value="0" min="0"></div>
+        <div class="field-row"><label for="f-elbow45">45&deg; elbow</label><input type="number" id="f-elbow45" value="2" min="0"></div>
+        <div class="field-row"><label for="f-check">Check / flocheck valve</label><input type="number" id="f-check" value="1" min="0"></div>
+        <div class="field-row"><label for="f-valve">Gate / ball valve</label><input type="number" id="f-valve" value="1" min="0"></div>
+        <div class="field-row" id="row-entrance"><label for="f-entryexit">Pool entrance / exit (suction &amp; return)</label><input type="number" id="f-entryexit" value="2" min="0"></div>
+      </fieldset>
+
+      <div class="actions">
+        <button type="button" class="action-btn secondary" id="reset-btn">Reset defaults</button>
+        <button type="button" class="action-btn" id="print-btn">Print or save PDF</button>
+      </div>
+    </section>
+
+    <!-- RIGHT: RESULTS -->
+    <section class="card" aria-labelledby="results-heading">
+      <h2 id="results-heading">2. Required head &amp; pump match</h2>
+      <p class="sub">Calculated with the Darcy&ndash;Weisbach equation (Swamee&ndash;Jain friction factor) &mdash; the same method used for Waterco's internal engineering references.</p>
+
+      <div class="result-hero" aria-live="polite">
+        <div class="num" id="tdh-value">0.0m</div>
+        <div class="lbl">Total Dynamic Head required<br>at <span id="tdh-flow">150</span> L/min</div>
+      </div>
+
+      <table class="breakdown">
+        <tr><td>Static (elevation) head</td><td class="val" id="b-static">&mdash;</td></tr>
+        <tr><td>Pipe friction loss</td><td class="val" id="b-pipe">&mdash;</td></tr>
+        <tr><td>Fittings &amp; valves loss</td><td class="val" id="b-fittings">&mdash;</td></tr>
+        <tr class="total"><td>Total Dynamic Head</td><td class="val" id="b-total">&mdash;</td></tr>
+      </table>
+      <p class="note" id="velocity-note"></p>
+
+      <div id="pump-result" aria-live="polite"></div>
+
+      <div class="quick-access" aria-labelledby="quick-access-heading">
+        <h3 id="quick-access-heading">Dealer access tips</h3>
+        <ol>
+          <li>Host this file on a public web link so dealers can open it from any computer or iPhone browser.</li>
+          <li>Share the same link by email, QR code, and dealer portal.</li>
+          <li>On iPhone, open in Safari and use Share &gt; Add to Home Screen for quick repeat access.</li>
+        </ol>
+      </div>
+
+      <h2 style="margin-top:22px;">Waterco pump performance curves</h2>
+      <div id="chart-holder"></div>
+    </section>
+
+  </div>
+</div>
+</main>
+
+<section class="footer-note" aria-label="Usage notes">
+  <strong>How to use this at a dealer visit:</strong> pace out (or estimate from the site photos) the pipe run and elevation, count the fittings you can see, and read off the required TDH and matched pump directly &mdash; no laptop spreadsheet needed.<br><br>
+  <strong>Pump range covered:</strong> Dedicated Solar draws from Supastream (general purpose, low-to-medium head, 40/50mm) first, stepping up to Hydrostorm (50mm, high head) once Supastream can't clear the TDH. Booster (Post-Filter) uses Aquastream MK2 Solar only (40mm) &mdash; it's purpose-built for the integrated application, drawing from the filtration line downstream of the filter.<br><br>
+  <strong>Assumptions:</strong> water at ~25&deg;C, uPVC pipe roughness 0.002mm, nominal pipe ID = nominal size. Fitting K&#8209;values and the friction method are taken from Waterco's internal friction-loss reference. <strong>Supastream and Hydrostorm curves are fitted from the catalogue's tabulated flow-at-head figures</strong> (e.g. flow at 8m/10m), which is more reliable near the duty point but still an extrapolation at the extremes. <strong>Aquastream MK2 Solar curves are approximated from the published chart</strong> (fitted, anchored to shut-off head and max-flow) since exact tabulated data wasn't published for that range. For a job on the edge between two models, confirm against Waterco's official curve or selection software before quoting.
+</section>
+
+<script>
+(function(){
+  const g = 9.81;
+  const nu = 1.0e-6;      // kinematic viscosity, m2/s (~25C pool water)
+  const eps = 0.000002;   // pipe roughness, m (uPVC)
+
+  const K = {
+    elbow90: 0.9, elbow90lr: 0.6, elbow45: 0.4,
+    check: 2.3, valve: 0.2, entryexit: 1.5 // combined sharp entrance (0.5) + exit (1.0)
+  };
+
+  // H(Q) = H0 * (1 - (Q/Qmax)^2), clipped at Q > Qmax
+  // Dedicated Solar: Supastream (general purpose, low-to-medium head) is the
+  // default; Hydrostorm (high head) steps in once Supastream can't clear the TDH.
+  // Both fitted from the catalogue's tabulated flow-at-head figures.
+  // Booster (Post-Filter): Aquastream MK2 Solar only - it's purpose-built for
+  // integrated systems where the booster draws from the filtration line
+  // downstream of the pool filter, ahead of the collector intake. Curve
+  // approximated from the published performance chart.
+  const pumpsByCircuit = {
+    dedicated: [
+      {name:'Supastream 50 (0.5HP, 40mm)',  short:'SS50',  H0:8.7,  Qmax:216, family:'supastream'},
+      {name:'Supastream 75 (0.75HP, 40/50mm)', short:'SS75', H0:10.8, Qmax:234, family:'supastream'},
+      {name:'Supastream 100 (1.0HP, 40/50mm)', short:'SS100',H0:12.2, Qmax:399, family:'supastream'},
+      {name:'Supastream 150 (1.5HP, 40/50mm)', short:'SS150',H0:14.2, Qmax:485, family:'supastream'},
+      {name:'Hydrostorm 100 (1.0HP, 50mm, high head)', short:'HS100',H0:18.5, Qmax:332, family:'hydrostorm'},
+      {name:'Hydrostorm 150 (1.5HP, 50mm, high head)', short:'HS150',H0:18.5, Qmax:464, family:'hydrostorm'},
+      {name:'Hydrostorm 200 (2.0HP, 50mm, high head)', short:'HS200',H0:27.0, Qmax:441, family:'hydrostorm'},
+    ],
+    booster: [
+      {name:'Aquastream MK2 Solar 050 (0.5HP, 40mm)', short:'AS50',  H0:13.5, Qmax:150, family:'aquastream'},
+      {name:'Aquastream MK2 Solar 075 (0.75HP, 40mm)', short:'AS75', H0:14.0, Qmax:230, family:'aquastream'},
+      {name:'Aquastream MK2 Solar 100 (1.0HP, 40mm)',  short:'AS100',H0:14.5, Qmax:310, family:'aquastream'},
+      {name:'Aquastream MK2 Solar 150 (1.5HP, 40mm)',  short:'AS150',H0:15.5, Qmax:400, family:'aquastream'},
+    ],
+  };
+  const famColor = {supastream:'#134a7d', hydrostorm:'#0f8f8f', aquastream:'#134a7d'};
+  const famLabel = {supastream:'Supastream', hydrostorm:'Hydrostorm', aquastream:'Aquastream MK2 Solar'};
+
+  const state = { circuit:'dedicated', storey:'single' };
+
+  const explain = {
+    dedicated: 'Direct suction from the pool into the solar pump, up through the collector (single- or double-storey roof), then back down into the pool. This pump carries the entire loop on its own \u2014 Supastream for low-to-medium head jobs, Hydrostorm once the head requirement gets high.',
+    booster: 'Installed within the filtration system, after the filter, using the Aquastream MK2 Solar pump \u2014 purpose-built for this integrated application. It only has to add enough head to push flow up to the collector and back down into the filtration line, since the main filtration pump is already handling the rest of the circuit.'
+  };
+
+  function setSeg(id, key){
+    Array.from(document.querySelectorAll('#'+id+' button')).forEach(b=>{
+      b.classList.toggle('active', b.dataset.val === state[key]);
+    });
+  }
+
+  document.getElementById('seg-circuit').addEventListener('click', e=>{
+    if(e.target.tagName!=='BUTTON') return;
+    state.circuit = e.target.dataset.val;
+    setSeg('seg-circuit','circuit');
+    document.getElementById('circuit-explain').textContent = explain[state.circuit];
+    document.getElementById('row-entrance').style.display = state.circuit==='dedicated' ? 'grid' : 'none';
+    if(state.circuit==='booster'){ document.getElementById('f-entryexit').value = 0; }
+    else { document.getElementById('f-entryexit').value = 2; }
+    compute();
+  });
+
+  document.getElementById('seg-storey').addEventListener('click', e=>{
+    if(e.target.tagName!=='BUTTON') return;
+    state.storey = e.target.dataset.val;
+    setSeg('seg-storey','storey');
+    const elevInput = document.getElementById('elevation');
+    const elbowInput = document.getElementById('f-elbow90');
+    const lengthInput = document.getElementById('length');
+    if(state.storey==='single'){ elevInput.value=4.5; elbowInput.value=4; lengthInput.value=18; }
+    else if(state.storey==='double'){ elevInput.value=7.5; elbowInput.value=6; lengthInput.value=26; }
+    compute();
+  });
+
+  Array.from(document.querySelectorAll('input, select')).forEach(el=>el.addEventListener('input', compute));
+
+  function frictionFactor(Re, D){
+    const term = eps/(3.7*D) + 5.74/Math.pow(Re,0.9);
+    return 0.25 / Math.pow(Math.log10(term), 2);
+  }
+
+  function headLossForFlowLPM(QLpm, D_mm, L_m, fittings){
+    const D = D_mm/1000;
+    const Q = QLpm/60000; // m3/s
+    const A = Math.PI/4*D*D;
+    const V = Q/A;
+    const Re = V*D/nu;
+    const f = frictionFactor(Re, D);
+    const hf_pipe = f*(L_m/D)*(V*V)/(2*g);
+    const sumK = fittings.elbow90*K.elbow90 + fittings.elbow90lr*K.elbow90lr + fittings.elbow45*K.elbow45
+               + fittings.check*K.check + fittings.valve*K.valve + fittings.entryexit*K.entryexit;
+    const hf_fit = sumK*(V*V)/(2*g);
+    return {V, Re, f, hf_pipe, hf_fit};
+  }
+
+  function pumpHeadAt(pump, Q){
+    if(Q > pump.Qmax) return 0;
+    return pump.H0*(1-(Q/pump.Qmax)*(Q/pump.Qmax));
+  }
+
+  function drawChart(reqQ, reqH){
+    const list = pumpsByCircuit[state.circuit];
+    const maxQ = Math.max(...list.map(p=>p.Qmax), reqQ);
+    const maxH = Math.max(...list.map(p=>p.H0), reqH);
+    const W=480, H=340, ml=42, mr=34, mt=14, mb=34;
+    const pw=W-ml-mr, ph=H-mt-mb;
+    const xMax=Math.ceil((maxQ*1.08)/50)*50;
+    const yMax=Math.ceil((maxH*1.12)/5)*5;
+    const x = q => ml + (q/xMax)*pw;
+    const y = h => mt + ph - (h/yMax)*ph;
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:480px;">`;
+    // grid
+    const hStep = yMax>20?5:2;
+    for(let h=0; h<=yMax; h+=hStep){
+      svg += `<line class="grid-line" x1="${ml}" y1="${y(h)}" x2="${W-mr}" y2="${y(h)}"/>`;
+      svg += `<text class="axis-label" x="${ml-6}" y="${y(h)+3}" text-anchor="end">${h}</text>`;
+    }
+    const qStep = xMax>300?100:50;
+    for(let q=0; q<=xMax; q+=qStep){
+      svg += `<line class="grid-line" x1="${x(q)}" y1="${mt}" x2="${x(q)}" y2="${H-mb}"/>`;
+      svg += `<text class="axis-label" x="${x(q)}" y="${H-mb+16}" text-anchor="middle">${q}</text>`;
+    }
+    svg += `<text class="axis-label" x="${W/2}" y="${H-4}" text-anchor="middle">Flow (L/min)</text>`;
+    svg += `<text class="axis-label" transform="translate(12,${H/2}) rotate(-90)" text-anchor="middle">Head (m)</text>`;
+
+    list.forEach((p,i)=>{
+      let pts=[];
+      for(let q=0; q<=p.Qmax; q+=10){ pts.push(`${x(q)},${y(pumpHeadAt(p,q))}`); }
+      const idxInFamily = list.filter(pp=>pp.family===p.family).indexOf(p);
+      svg += `<polyline points="${pts.join(' ')}" fill="none" stroke="${famColor[p.family]}" stroke-width="2" opacity="${0.45+0.16*idxInFamily}"/>`;
+      const lx = Math.min(x(p.Qmax)+5+idxInFamily*3, W-mr+2);
+      const ly = Math.max(Math.min(y(pumpHeadAt(p,p.Qmax)), H-mb-4), mt+8) + (idxInFamily%2===0 ? -8 : 12);
+      svg += `<text class="curve-label" x="${lx}" y="${ly}" paint-order="stroke" stroke="#fff" stroke-width="3">${p.short}</text>`;
+    });
+
+    // operating point
+    const opX = Math.min(x(reqQ), W-mr);
+    const opY = y(Math.min(reqH,yMax));
+    svg += `<line class="grid-line" x1="${opX}" y1="${mt}" x2="${opX}" y2="${H-mb}" stroke-dasharray="3,3" stroke="#f2a93b"/>`;
+    svg += `<circle class="op-point" cx="${opX}" cy="${opY}" r="5"/>`;
+    svg += `</svg>`;
+
+    const families = [...new Set(list.map(p=>p.family))];
+    svg += `<div style="display:flex;gap:14px;font-size:11.5px;color:#5b6b7a;margin-top:4px;flex-wrap:wrap;">` +
+      families.map(f=>`<span><span style="display:inline-block;width:10px;height:10px;background:${famColor[f]};border-radius:2px;margin-right:4px;"></span>${famLabel[f]}</span>`).join('') +
+      `</div>`;
+    document.getElementById('chart-holder').innerHTML = svg;
+  }
+
+  function compute(){
+    const Q = parseFloat(document.getElementById('flow').value)||0;
+    const elevation = parseFloat(document.getElementById('elevation').value)||0;
+    const D = parseFloat(document.getElementById('diameter').value)||40;
+    const L = parseFloat(document.getElementById('length').value)||0;
+    const fittings = {
+      elbow90: parseFloat(document.getElementById('f-elbow90').value)||0,
+      elbow90lr: parseFloat(document.getElementById('f-elbow90lr').value)||0,
+      elbow45: parseFloat(document.getElementById('f-elbow45').value)||0,
+      check: parseFloat(document.getElementById('f-check').value)||0,
+      valve: parseFloat(document.getElementById('f-valve').value)||0,
+      entryexit: parseFloat(document.getElementById('f-entryexit').value)||0,
+    };
+
+    const r = headLossForFlowLPM(Q, D, L, fittings);
+    const tdh = elevation + r.hf_pipe + r.hf_fit;
+
+    document.getElementById('tdh-value').textContent = tdh.toFixed(1)+'m';
+    document.getElementById('tdh-flow').textContent = Q;
+    document.getElementById('b-static').textContent = elevation.toFixed(1)+'m';
+    document.getElementById('b-pipe').textContent = r.hf_pipe.toFixed(2)+'m';
+    document.getElementById('b-fittings').textContent = r.hf_fit.toFixed(2)+'m';
+    document.getElementById('b-total').textContent = tdh.toFixed(2)+'m';
+    document.getElementById('velocity-note').textContent =
+      `Pipe velocity ${r.V.toFixed(2)} m/s, Reynolds number ${Math.round(r.Re).toLocaleString()}` +
+      (r.V>2.4 ? ' \u2014 above the recommended ~2.4 m/s for return lines; consider a larger pipe size.' : '.');
+
+    // pump matching
+    const list = pumpsByCircuit[state.circuit];
+    let best=null;
+    for(const p of list){
+      const h = pumpHeadAt(p, Q);
+      if(h >= tdh){ best = p; break; }
+    }
+    const holder = document.getElementById('pump-result');
+    if(best){
+      const headAtQ = pumpHeadAt(best, Q);
+      const margin = headAtQ - tdh;
+      const cls = margin < 1.5 ? 'tight' : 'ok';
+      holder.innerHTML = `<div class="pump-pick ${cls}">
+        <div class="name">Recommended: ${best.name}</div>
+        <div class="status">${margin<1.5 ? 'Fits, but with a tight margin ('+margin.toFixed(1)+'m) &mdash; check for a larger model or reduce fittings/pipe length.' : 'Comfortable margin ('+margin.toFixed(1)+'m) of head above the requirement.'}</div>
+      </div>`;
+    } else {
+      const largest = list[list.length-1];
+      holder.innerHTML = `<div class="pump-pick none">
+        <div class="name">No pump in this range clears the TDH at ${Q} L/min</div>
+        <div class="status">Reduce pipe run/fittings, increase pipe diameter, or reduce the target flow rate &mdash; even ${largest.name} doesn't clear this one as specified.</div>
+      </div>`;
+    }
+
+    drawChart(Q, tdh);
+  }
+
+  document.getElementById('circuit-explain').textContent = explain.dedicated;
+
+  const defaults = {
+    flow:150, elevation:4.5, diameter:'40', length:18,
+    'f-elbow90':4, 'f-elbow90lr':0, 'f-elbow45':2, 'f-check':1, 'f-valve':1, 'f-entryexit':2
+  };
+
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    state.circuit = 'dedicated';
+    state.storey = 'single';
+    setSeg('#seg-circuit','circuit');
+    setSeg('#seg-storey','storey');
+    Object.entries(defaults).forEach(([id, value]) => {
+      document.getElementById(id).value = value;
+    });
+    document.getElementById('row-entrance').style.display = 'grid';
+    document.getElementById('circuit-explain').textContent = explain.dedicated;
+    compute();
+  });
+
+  document.getElementById('print-btn').addEventListener('click', () => window.print());
+
+  compute();
+})();
+</script>
+
+</body>
+</html>
